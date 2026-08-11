@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@import "tldraw/tldraw.css";
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-surface: #1e293b;
+  --color-surface-hover: #334155;
+  --color-bg: #0f172a;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: #f8fafc;
+  min-height: 100vh;
+}
