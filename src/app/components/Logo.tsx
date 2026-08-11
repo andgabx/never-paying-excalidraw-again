@@ -1,0 +1,18 @@
+export default function Logo({ className = '' }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      {/* Cloud Outline */}
+      <path d="M 6.5,17.5 L 17.5,17.5 C 20.5,17.5 21.5,13.5 19,11.5 C 18.5,8.5 14.5,7.5 12,10.5 C 10.5,8 5.5,8.5 5,12 C 2,12.5 3,17.5 6.5,17.5 Z" />
+      {/* Infinity Symbol inside */}
+      <path d="M 9.5 14.5 C 8 14.5 8 12.5 9.5 12.5 C 11 12.5 11 14.5 12 13.5 C 13 12.5 13 14.5 14.5 14.5 C 16 14.5 16 12.5 14.5 12.5 C 13 12.5 13 14.5 12 13.5 C 11 12.5 11 14.5 9.5 14.5 Z" />
+    </svg>
+  );
+}

@@ -7,8 +7,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TLDraw Notes",
-  description: "Your digital whiteboard notes powered by TLDraw and NeonDB",
+  title: "CloudCanvas",
+  description: "Endless whiteboard and visual notes",
 };
 
 export default function RootLayout({

@@ -1,15 +1,18 @@
 @import "tailwindcss";
-@import "tldraw/tldraw.css";
 
 @theme {
-  --color-primary: #3b82f6;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-  --color-bg: #0f172a;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --background: #F9F9F9;
+  --foreground: #1e293b;
 }
 
 body {
-  background-color: var(--color-bg);
-  color: #f8fafc;
-  min-height: 100vh;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
 }

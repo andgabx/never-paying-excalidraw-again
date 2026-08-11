@@ -23,15 +23,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await request.json();
-    const { data, name } = body;
+    const { data, name, folderId } = body;
     
-    if (data === undefined && name === undefined) {
-      return NextResponse.json({ error: 'Missing data or name' }, { status: 400 });
+    if (data === undefined && name === undefined && folderId === undefined) {
+      return NextResponse.json({ error: 'Missing update fields' }, { status: 400 });
     }
 
     const updatePayload: Partial<typeof notes.$inferInsert> = { updatedAt: new Date() };
     if (data !== undefined) updatePayload.data = data;
     if (name !== undefined) updatePayload.name = name;
+    if (folderId !== undefined) updatePayload.folderId = folderId;
 
     await db.update(notes)
       .set(updatePayload)

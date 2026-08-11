@@ -1,12 +1,12 @@
 import DashboardClient from './components/DashboardClient';
 import { db } from '../db';
-import { notes } from '../db/schema';
+import { workspaces } from '../db/schema';
+import { desc } from 'drizzle-orm';
 
-// This is a Server Component. It fetches data directly from the DB on the server.
-export const dynamic = 'force-dynamic'; // Ensure it fetches fresh data
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const allNotes = await db.select().from(notes);
+  const allWorkspaces = await db.select().from(workspaces).orderBy(desc(workspaces.createdAt));
 
-  return <DashboardClient initialNotes={allNotes} />;
+  return <DashboardClient initialWorkspaces={allWorkspaces} />;
 }
