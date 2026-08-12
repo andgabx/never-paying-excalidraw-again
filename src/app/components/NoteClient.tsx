@@ -1,17 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { Tldraw, Editor, getSnapshot, loadSnapshot } from 'tldraw';
+import { useState, useEffect } from 'react';
+import { Tldraw, Editor, loadSnapshot } from 'tldraw';
+import 'tldraw/tldraw.css';
 import Link from 'next/link';
 import axios from 'axios';
 
-type Note = {
-  id: string;
-  name: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any;
-  updatedAt: string | Date;
-};
+import { Note } from '@/types';
 
 export default function NoteClient({ initialNote }: { initialNote: Note }) {
   const [note, setNote] = useState<Note>(initialNote);
@@ -19,16 +14,42 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
   const [lastSaved, setLastSaved] = useState<Date | null>(initialNote.updatedAt ? new Date(initialNote.updatedAt) : null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(initialNote.name);
+  const [editor, setEditor] = useState<Editor | null>(null);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const tldrawContainer = editor.getContainer();
+
+    // When the Tldraw container loses DOM focus (e.g. user clicks the header),
+    // we keep its internal isFocused flag true so keyboard shortcuts keep working.
+    // Exception: if focus moves to an input/textarea (like the rename field), we
+    // leave isFocused alone so typing in those inputs works normally.
+    const handleBlur = () => {
+      const activeEl = document.activeElement;
+      const isTypingInInput =
+        activeEl instanceof HTMLInputElement ||
+        activeEl instanceof HTMLTextAreaElement;
+
+      if (!isTypingInInput) {
+        // Re-assert isFocused so useKeyboardShortcuts keeps its listeners active
+        editor.updateInstanceState({ isFocused: true });
+      }
+    };
+
+    tldrawContainer.addEventListener('blur', handleBlur, { capture: true });
+    return () => tldrawContainer.removeEventListener('blur', handleBlur, { capture: true });
+  }, [editor]);
+
+
 
   const handleSave = async (editor: Editor) => {
     setSaving(true);
-    const snapshot = getSnapshot(editor.store);
+    const snapshot = editor.store.getStoreSnapshot();
     try {
       await axios.put(`/api/notes/${note.id}`, { data: snapshot });
       setLastSaved(new Date());
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (error) { console.error(error); }
     setSaving(false);
   };
 
@@ -42,9 +63,7 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
     setNote({...note, name: newName});
     try {
       await axios.put(`/api/notes/${note.id}`, { name: newName });
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (error) { console.error(error); }
   };
 
   const formatLastSaved = (date: Date | null) => {
@@ -53,12 +72,12 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-900">
-      <header className="flex items-center justify-between py-3 px-6 bg-slate-800 border-b border-slate-700 shadow-sm z-10 relative">
-        <div className="flex items-center gap-4">
+    <div className="flex flex-col h-screen bg-brand-5">
+      <header className="flex items-center justify-between py-4 px-8 bg-brand-4 border-b border-brand-3/30 shadow-md z-10 relative">
+        <div className="flex items-center gap-6">
           <Link 
             href="/" 
-            className="text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors font-medium text-sm"
+            className="text-brand-2 hover:text-brand-1 bg-brand-3/40 hover:bg-brand-3/60 px-4 py-2 rounded-xl transition-colors font-bold text-sm"
           >
             ← Voltar
           </Link>
@@ -69,29 +88,40 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
               onChange={e => setNewName(e.target.value)}
               onBlur={handleRename}
               onKeyDown={e => e.key === 'Enter' && handleRename()}
-              className="bg-transparent border-b border-dashed border-blue-400 text-white text-lg font-bold outline-none"
+              className="bg-transparent border-b-2 border-brand-3 text-brand-1 text-xl font-black outline-none"
             />
           ) : (
             <div 
-              className="text-lg font-bold text-white cursor-pointer flex items-center gap-2 group" 
+              className="text-xl font-black text-brand-1 cursor-pointer flex items-center gap-2 group" 
               onClick={() => setIsEditingName(true)}
               title="Clique para renomear"
             >
-              {note.name} <span className="text-sm opacity-50 group-hover:opacity-100 transition-opacity">✏️</span>
+              {note.name} <span className="text-sm opacity-0 group-hover:opacity-100 transition-opacity">✏️</span>
             </div>
           )}
         </div>
-        <div className="text-sm text-slate-400 font-medium">
+        <div className="text-xs uppercase tracking-wider text-brand-2 font-black">
           {saving ? 'Salvando...' : formatLastSaved(lastSaved)}
         </div>
       </header>
       
       <div className="flex-1 w-full relative z-0">
         <Tldraw 
-          onMount={(editor) => {
-            if (note.data && note.data.document) {
+          autoFocus
+          onMount={(ed) => {
+            // Force focus to Tldraw so shortcuts work
+            ed.getContainer().focus();
+            setEditor(ed);
+            
+            if (note.data && Object.keys(note.data).length > 0) {
               try {
-                loadSnapshot(editor.store, note.data);
+                if (note.data.document) {
+                  // Old format (TLEditorSnapshot)
+                  loadSnapshot(ed.store, note.data);
+                } else {
+                  // New format (TLStoreSnapshot)
+                  ed.store.loadStoreSnapshot(note.data);
+                }
               } catch (e) {
                 console.error("Failed to load snapshot", e);
               }
@@ -99,9 +129,9 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
             
             // Auto-save when the user stops interacting
             let timeoutId: NodeJS.Timeout;
-            editor.store.listen(() => {
+            ed.store.listen(() => {
               clearTimeout(timeoutId);
-              timeoutId = setTimeout(() => handleSave(editor), 2000);
+              timeoutId = setTimeout(() => handleSave(ed), 2000);
             });
           }}
         />

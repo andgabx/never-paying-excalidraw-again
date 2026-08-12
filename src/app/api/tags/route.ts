@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import { FolderRepository } from '@/core/repositories/FolderRepository';
-import { FolderService } from '@/core/services/FolderService';
+import { TagRepository } from '@/core/repositories/TagRepository';
+import { TagService } from '@/core/services/TagService';
 
-const repo = new FolderRepository();
-const service = new FolderService(repo);
+const repo = new TagRepository();
+const service = new TagService(repo);
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get('workspaceId');
-    const data = await service.getFoldersByWorkspace(workspaceId as string);
+    const data = await service.getTagsByWorkspace(workspaceId as string);
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
@@ -18,9 +18,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { name, workspaceId, parentId } = await request.json();
-    const newFolder = await service.createFolder(name, workspaceId, parentId || null);
-    return NextResponse.json(newFolder);
+    const { name, color, workspaceId } = await request.json();
+    const newTag = await service.createTag(name, color, workspaceId);
+    return NextResponse.json(newTag);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }

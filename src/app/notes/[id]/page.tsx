@@ -1,4 +1,4 @@
-import NoteClient from '../../components/NoteClient';
+import DynamicNoteWrapper from './DynamicNoteWrapper';
 import { db } from '../../../db';
 import { notes } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
@@ -16,5 +16,5 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
     notFound();
   }
 
-  return <NoteClient initialNote={note} />;
+  return <DynamicNoteWrapper initialNote={note as any} />;
 }
