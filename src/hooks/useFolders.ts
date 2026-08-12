@@ -66,19 +66,20 @@ export function useFolders(selectedWorkspaceId: string | undefined) {
     } catch { toast.error('Erro ao renomear pasta'); }
   };
 
-  const moveFolder = async (id: string, targetFolderId: string | null, targetWorkspaceId?: string) => {
+  const moveFolder = async (id: string, targetFolderId: string | null, targetWorkspaceId?: string, destinationName?: string) => {
     try {
+      const label = destinationName ? `→ ${destinationName}` : '';
       if (targetWorkspaceId && targetWorkspaceId !== selectedWorkspaceId) {
         setFolders(prev => prev.filter(f => f.id !== id));
         setAllFolders(prev => prev.filter(f => f.id !== id));
         await axios.put(`/api/folders/${id}`, { parentId: targetFolderId, workspaceId: targetWorkspaceId });
-        toast.success('Pasta movida para outro workspace!');
+        toast.success(`Pasta movida ${label}`);
         return;
       }
       setFolders(prev => prev.filter(f => f.id !== id));
       setAllFolders(prev => prev.map(f => f.id === id ? { ...f, parentId: targetFolderId } : f));
       await axios.put(`/api/folders/${id}`, { parentId: targetFolderId });
-      toast.success('Pasta movida com sucesso!');
+      toast.success(`Pasta movida ${label}`);
     } catch { toast.error('Erro ao mover pasta'); }
   };
 

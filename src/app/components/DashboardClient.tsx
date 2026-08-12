@@ -167,8 +167,10 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
         onDropToWorkspace={async (e, targetWorkspaceId) => {
           const { id, type } = JSON.parse(e.dataTransfer.getData('text/plain'));
           if (targetWorkspaceId === selectedWorkspace?.id) return;
-          if (type === 'note') moveNote(id, null, targetWorkspaceId);
-          else if (type === 'folder') moveFolder(id, null, targetWorkspaceId);
+          const targetWs = workspaces.find(w => w.id === targetWorkspaceId);
+          const destName = targetWs?.name;
+          if (type === 'note') moveNote(id, null, targetWorkspaceId, destName);
+          else if (type === 'folder') moveFolder(id, null, targetWorkspaceId, destName);
         }}
       />
 
@@ -182,8 +184,10 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
               onOpenFolderModal={openFolderModal} onOpenNoteModal={openNoteModal} onNavigateUp={() => navigateUp(() => loadNotes(selectedWorkspace.id), (fid) => loadNotes(selectedWorkspace.id, fid))}
               onDropToParent={async (e) => {
                 const { id, type } = JSON.parse(e.dataTransfer.getData('text/plain'));
-                if (type === 'note') moveNote(id, selectedFolder?.parentId || null);
-                else if (type === 'folder') moveFolder(id, selectedFolder?.parentId || null);
+                const parentFolder = allFolders.find(f => f.id === selectedFolder?.parentId);
+                const destName = parentFolder?.name ?? selectedWorkspace?.name;
+                if (type === 'note') moveNote(id, selectedFolder?.parentId || null, undefined, destName);
+                else if (type === 'folder') moveFolder(id, selectedFolder?.parentId || null, undefined, destName);
               }}
             />
 
@@ -235,8 +239,10 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
                       e.preventDefault(); e.currentTarget.classList.remove('ring-2', 'ring-brand-2', 'bg-brand-4/20');
                       const { id, type } = JSON.parse(e.dataTransfer.getData('text/plain'));
                       if (id === targetFolderId) return;
-                      if (type === 'note') moveNote(id, targetFolderId, selectedWorkspace?.id);
-                      else if (type === 'folder') moveFolder(id, targetFolderId, selectedWorkspace?.id);
+                      const targetFolder = allFolders.find(f => f.id === targetFolderId);
+                      const destName = targetFolder?.name;
+                      if (type === 'note') moveNote(id, targetFolderId, selectedWorkspace?.id, destName);
+                      else if (type === 'folder') moveFolder(id, targetFolderId, selectedWorkspace?.id, destName);
                     }}
                   />
                 )}
@@ -256,7 +262,7 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
       {/* Modals Mounting */}
       {isWorkspaceModalOpen && <CreateWorkspaceModal newName={newName} setNewName={setNewName} onClose={() => setIsWorkspaceModalOpen(false)} onSave={async () => { await createWorkspace(newName); setIsWorkspaceModalOpen(false); }} />}
       {isFolderModalOpen && <CreateFolderModal newName={newName} setNewName={setNewName} workspaces={workspaces} modalWorkspaceId={modalWorkspaceId} setModalWorkspaceId={handleModalWorkspaceChange} modalFolders={modalFolders} selectedFolderForNewNote={selectedFolderForNewNote} setSelectedFolderForNewNote={setSelectedFolderForNewNote} onClose={() => setIsFolderModalOpen(false)} onSave={async () => { await createFolder(newName, modalWorkspaceId, selectedFolderForNewNote); setIsFolderModalOpen(false); }} />}
-      {isTagModalOpen && <CreateTagModal newName={newName} setNewName={setNewName} newTagColor={newTagColor} setNewTagColor={setNewTagColor} workspaces={workspaces} modalWorkspaceId={modalWorkspaceId} setModalWorkspaceId={handleModalWorkspaceChange} onClose={() => setIsTagModalOpen(false)} onSave={async () => { await createTag(newName, newTagColor, modalWorkspaceId); setIsTagModalOpen(false); }} />}
+      {isTagModalOpen && <CreateTagModal isOpen={true} newName={newName} setNewName={setNewName} newTagColor={newTagColor} setNewTagColor={setNewTagColor} workspaces={workspaces} modalWorkspaceId={modalWorkspaceId} setModalWorkspaceId={handleModalWorkspaceChange} onClose={() => setIsTagModalOpen(false)} onSave={async () => { await createTag(newName, newTagColor, modalWorkspaceId); setIsTagModalOpen(false); }} />}
       {isNoteModalOpen && <CreateNoteModal newName={newName} setNewName={setNewName} workspaces={workspaces} modalWorkspaceId={modalWorkspaceId} setModalWorkspaceId={handleModalWorkspaceChange} modalFolders={modalFolders} selectedFolderForNewNote={selectedFolderForNewNote} setSelectedFolderForNewNote={setSelectedFolderForNewNote} modalTags={modalTags} selectedTagsForNewNote={selectedTagsForNewNote} toggleTagForNewNote={(id: string) => setSelectedTagsForNewNote(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])} onClose={() => setIsNoteModalOpen(false)} onSave={async () => { await createNote(newName, modalWorkspaceId, selectedFolderForNewNote, selectedTagsForNewNote); setIsNoteModalOpen(false); }} />}
       {isEditTagsModalOpen && <EditTagsModal note={editingNoteForTags} tags={tags} selectedTagsForNewNote={selectedTagsForNewNote} toggleTagForNewNote={(id: string) => setSelectedTagsForNewNote(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])} onClose={() => { setIsEditTagsModalOpen(false); setEditingNoteForTags(null); }} onSave={async () => { if (editingNoteForTags) { await updateNoteTags(editingNoteForTags.id, selectedTagsForNewNote); setIsEditTagsModalOpen(false); setEditingNoteForTags(null); } }} />}
       

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Tldraw, Editor, loadSnapshot } from 'tldraw';
 import 'tldraw/tldraw.css';
 import Link from 'next/link';
@@ -15,32 +15,6 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(initialNote.name);
   const [editor, setEditor] = useState<Editor | null>(null);
-
-  useEffect(() => {
-    if (!editor) return;
-
-    const tldrawContainer = editor.getContainer();
-
-    // When the Tldraw container loses DOM focus (e.g. user clicks the header),
-    // we keep its internal isFocused flag true so keyboard shortcuts keep working.
-    // Exception: if focus moves to an input/textarea (like the rename field), we
-    // leave isFocused alone so typing in those inputs works normally.
-    const handleBlur = () => {
-      const activeEl = document.activeElement;
-      const isTypingInInput =
-        activeEl instanceof HTMLInputElement ||
-        activeEl instanceof HTMLTextAreaElement;
-
-      if (!isTypingInInput) {
-        // Re-assert isFocused so useKeyboardShortcuts keeps its listeners active
-        editor.updateInstanceState({ isFocused: true });
-      }
-    };
-
-    tldrawContainer.addEventListener('blur', handleBlur, { capture: true });
-    return () => tldrawContainer.removeEventListener('blur', handleBlur, { capture: true });
-  }, [editor]);
-
 
 
   const handleSave = async (editor: Editor) => {
@@ -73,7 +47,18 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
 
   return (
     <div className="flex flex-col h-screen bg-brand-5">
-      <header className="flex items-center justify-between py-4 px-8 bg-brand-4 border-b border-brand-3/30 shadow-md z-10 relative">
+      {/* onPointerDown e.preventDefault() prevents header clicks from stealing
+          DOM focus away from the tldraw canvas — official tldraw SDK pattern.
+          Exception: the rename <input> needs real focus, so we allow it there. */}
+      <header
+        className="flex items-center justify-between py-4 px-8 bg-brand-4 border-b border-brand-3/30 shadow-md z-10 relative"
+        onPointerDown={(e) => {
+          // Don't steal focus unless the user is clicking directly on an input
+          if (!(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+            e.preventDefault();
+          }
+        }}
+      >
         <div className="flex items-center gap-6">
           <Link 
             href="/" 
@@ -109,9 +94,17 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
         <Tldraw 
           autoFocus
           onMount={(ed) => {
-            // Force focus to Tldraw so shortcuts work
-            ed.getContainer().focus();
+            // Delay ensures focus runs after all React effects settle.
+            // editor.focus() is the correct tldraw API (not getContainer().focus())
+            setTimeout(() => {
+              ed.focus();
+              // Ensure shortcuts are enabled — a stale localStorage value can disable them
+              if (!ed.user.getAreKeyboardShortcutsEnabled()) {
+                ed.user.updateUserPreferences({ areKeyboardShortcutsEnabled: true });
+              }
+            }, 50);
             setEditor(ed);
+
             
             if (note.data && Object.keys(note.data).length > 0) {
               try {

@@ -49,17 +49,18 @@ export function useNotes(tags: Tag[]) {
     } catch { toast.error('Erro ao excluir'); }
   };
 
-  const moveNote = async (id: string, targetFolderId: string | null, targetWorkspaceId?: string) => {
+  const moveNote = async (id: string, targetFolderId: string | null, targetWorkspaceId?: string, destinationName?: string) => {
     try {
-      if (targetWorkspaceId && targetWorkspaceId !== tags[0]?.workspaceId /* we don't have workspaceId here easily except passing it */) {
+      const label = destinationName ? `→ ${destinationName}` : '';
+      if (targetWorkspaceId) {
          setNotes(prev => prev.filter(n => n.id !== id));
          await axios.put(`/api/notes/${id}`, { folderId: targetFolderId, workspaceId: targetWorkspaceId });
-         toast.success('Nota movida para outro workspace!');
+         toast.success(`Nota movida ${label}`);
          return;
       }
       setNotes(prev => prev.filter(n => n.id !== id));
       await axios.put(`/api/notes/${id}`, { folderId: targetFolderId });
-      toast.success('Nota movida!');
+      toast.success(`Nota movida ${label}`);
     } catch { toast.error('Erro ao mover nota'); }
   };
 
