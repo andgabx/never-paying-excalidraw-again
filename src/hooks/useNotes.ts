@@ -79,5 +79,16 @@ export function useNotes(tags: Tag[]) {
     }
   };
 
-  return { notes, loadNotes, createNote, renameNote, deleteNote, moveNote, updateNoteTags };
+  const searchNotesAPI = async (query: string, scope: 'global' | 'workspace' | 'folder', workspaceId: string, folderId: string | null) => {
+    try {
+      let url = `/api/notes?search=${encodeURIComponent(query)}&scope=${scope}&workspaceId=${workspaceId}`;
+      if (folderId) url += `&folderId=${folderId}`;
+      const res = await axios.get(url);
+      setNotes(res.data);
+    } catch (error) {
+      toast.error('Erro ao pesquisar notas');
+    }
+  };
+
+  return { notes, loadNotes, createNote, renameNote, deleteNote, moveNote, updateNoteTags, searchNotesAPI };
 }

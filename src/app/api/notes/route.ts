@@ -10,6 +10,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get('workspaceId');
     const folderId = searchParams.get('folderId') || null;
+    const search = searchParams.get('search');
+    const scope = searchParams.get('scope');
+
+    if (search) {
+      if (scope === 'workspace') {
+        const data = await service.searchNotes(search, workspaceId as string);
+        return NextResponse.json(data);
+      } else if (scope === 'folder') {
+        const data = await service.searchNotes(search, workspaceId as string, folderId);
+        return NextResponse.json(data);
+      } else {
+        // scope === 'global' or undefined
+        const data = await service.searchNotes(search);
+        return NextResponse.json(data);
+      }
+    }
+
     const data = await service.getNotes(workspaceId as string, folderId);
     return NextResponse.json(data);
   } catch (error: any) {

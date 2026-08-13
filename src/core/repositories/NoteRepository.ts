@@ -66,4 +66,61 @@ export class NoteRepository implements INoteRepository {
   async removeTags(noteId: string): Promise<void> {
     await db.delete(noteTags).where(eq(noteTags.noteId, noteId));
   }
+
+  async searchNotes(queryStr: string, workspaceId?: string, folderId?: string | null): Promise<Note[]> {
+    const { ilike, or } = require('drizzle-orm');
+    
+    let query: any = db.select({ 
+      id: notes.id, 
+      name: notes.name, 
+      createdAt: notes.createdAt, 
+      updatedAt: notes.updatedAt, 
+      folderId: notes.folderId, 
+      workspaceId: notes.workspaceId,
+      thumbnail: notes.thumbnail,
+      extractedText: notes.extractedText
+    })
+    .from(notes);
+      
+    const searchCondition = or(
+      ilike(notes.name, `%${queryStr}%`),
+      ilike(notes.extractedText, `%${queryStr}%`)
+    );
+
+    const conditions = [searchCondition];
+    
+    if (workspaceId) {
+      conditions.push(eq(notes.workspaceId, workspaceId));
+      if (folderId !== undefined) {
+        if (folderId === null) {
+          conditions.push(isNull(notes.folderId));
+        } else {
+          conditions.push(eq(notes.folderId, folderId));
+        }
+      }
+    }
+
+    query = query.where(and(...conditions));
+    query = query.orderBy(desc(notes.updatedAt));
+    
+    const allNotes = await query as unknown as { id: string; name: string; createdAt: Date; updatedAt: Date; folderId: string | null; workspaceId: string; thumbnail?: string | null; extractedText?: string | null }[];
+    
+    const noteIds = allNotes.map(n => n.id);
+    let noteTagsMap: Record<string, any[]> = {};
+    
+    if (noteIds.length > 0) {
+      const tagsForNotes = await db.select({ noteId: noteTags.noteId, id: tags.id, name: tags.name, color: tags.color })
+        .from(noteTags)
+        .innerJoin(tags, eq(noteTags.tagId, tags.id))
+        .where(inArray(noteTags.noteId, noteIds));
+
+      noteTagsMap = tagsForNotes.reduce((acc: Record<string, unknown[]>, curr: { noteId: string; id: string; name: string; color: string }) => {
+        if (!acc[curr.noteId]) acc[curr.noteId] = [];
+        acc[curr.noteId].push({ id: curr.id, name: curr.name, color: curr.color });
+        return acc;
+      }, {});
+    }
+
+    return allNotes.map((n: any) => ({ ...n, tags: noteTagsMap[n.id] || [] })) as Note[];
+  }
 }

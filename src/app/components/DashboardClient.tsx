@@ -32,7 +32,7 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
   const { workspaces, selectedWorkspace, setSelectedWorkspace, createWorkspace, renameWorkspace } = useWorkspaces(initialWorkspaces);
   const { allFolders, folders, selectedFolder, loadFolders, navigateToFolder, navigateUp, createFolder, renameFolder, moveFolder } = useFolders(selectedWorkspace?.id);
   const { tags, selectedSidebarTag, setSelectedSidebarTag, loadTags, createTag, updateTag, deleteTag } = useTags(selectedWorkspace?.id);
-  const { notes, loadNotes, createNote, renameNote, deleteNote, moveNote, updateNoteTags } = useNotes(tags);
+  const { notes, loadNotes, createNote, renameNote, deleteNote, moveNote, updateNoteTags, searchNotesAPI } = useNotes(tags);
 
   // Modals & UI State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -147,13 +147,6 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
   let displayedNotes = selectedSidebarTag 
     ? notes.filter(n => n.tags?.some(t => t.id === selectedSidebarTag.id))
     : notes;
-  if (committedSearchQuery.trim()) {
-    const term = committedSearchQuery.toLowerCase();
-    displayedNotes = displayedNotes.filter(n => 
-      n.name.toLowerCase().includes(term) || 
-      (n.extractedText && n.extractedText.toLowerCase().includes(term))
-    );
-  }
 
   return (
     <div className="min-h-screen bg-brand-5 text-brand-1 flex flex-col md:flex-row font-sans">
@@ -185,7 +178,31 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
         ) : (
           <div className="max-w-6xl w-full mx-auto relative z-10">
             <DashboardHeader 
-              searchQuery={searchQuery} setSearchQuery={setSearchQuery} onCommitSearch={() => setCommittedSearchQuery(searchQuery)} selectedSidebarTag={selectedSidebarTag} selectedFolder={selectedFolder}
+              searchQuery={searchQuery} setSearchQuery={setSearchQuery} 
+              onCommitSearch={async () => {
+                setCommittedSearchQuery(searchQuery);
+                setIsLoadingContent(true);
+                try {
+                  if (!searchQuery.trim()) {
+                    if (selectedWorkspace) await loadNotes(selectedWorkspace.id, selectedFolder?.id || null);
+                  } else {
+                    if (selectedWorkspace) await searchNotesAPI(searchQuery, 'global', selectedWorkspace.id, selectedFolder?.id || null);
+                  }
+                } finally {
+                  setIsLoadingContent(false);
+                }
+              }} 
+              clearSearch={async () => {
+                setSearchQuery('');
+                setCommittedSearchQuery('');
+                setIsLoadingContent(true);
+                try {
+                  if (selectedWorkspace) await loadNotes(selectedWorkspace.id, selectedFolder?.id || null);
+                } finally {
+                  setIsLoadingContent(false);
+                }
+              }}
+              selectedSidebarTag={selectedSidebarTag} selectedFolder={selectedFolder}
               onOpenFolderModal={openFolderModal} onOpenNoteModal={openNoteModal} onNavigateUp={() => navigateUp(() => loadNotes(selectedWorkspace.id), (fid) => loadNotes(selectedWorkspace.id, fid))}
               onDropToParent={async (e) => {
                 const { id, type } = JSON.parse(e.dataTransfer.getData('text/plain'));

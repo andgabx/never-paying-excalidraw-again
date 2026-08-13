@@ -6,4 +6,5 @@ export interface INoteRepository {
   deleteNote(id: string): Promise<void>;
   assignTags(noteId: string, tagIds: string[]): Promise<void>;
   removeTags(noteId: string): Promise<void>;
+  searchNotes(query: string, workspaceId?: string, folderId?: string | null): Promise<Note[]>;
 }

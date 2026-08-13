@@ -32,4 +32,9 @@ export class NoteService {
       await this.noteRepo.assignTags(noteId, tagIds);
     }
   }
+
+  async searchNotes(query: string, workspaceId?: string, folderId?: string | null) {
+    if (!query) throw new Error('Search query is required');
+    return await this.noteRepo.searchNotes(query, workspaceId, folderId);
+  }
 }

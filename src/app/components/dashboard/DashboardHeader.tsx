@@ -15,14 +15,14 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({
-  searchQuery, setSearchQuery, onCommitSearch, selectedSidebarTag, selectedFolder,
+  searchQuery, setSearchQuery, onCommitSearch, clearSearch, selectedSidebarTag, selectedFolder,
   onOpenFolderModal, onOpenNoteModal, onNavigateUp, onDropToParent
-}: DashboardHeaderProps) {
+}: DashboardHeaderProps & { clearSearch: () => void }) {
   return (
     <>
       <header className="flex flex-col sm:flex-row sm:items-center justify-between mb-12 gap-6">
-        <div className="flex-1 max-w-lg relative">
-          <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <div className="flex-1 max-w-2xl relative flex items-center bg-brand-4/50 border border-brand-4 rounded-full focus-within:ring-2 focus-within:ring-brand-3 transition-all shadow-sm">
+          <svg className="absolute left-5 w-4 h-4 text-brand-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input 
             type="text" placeholder="Pesquisar por título ou conteúdo das anotações..." 
             value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
@@ -31,8 +31,13 @@ export function DashboardHeader({
                 onCommitSearch();
               }
             }}
-            className="w-full bg-brand-4/50 border border-brand-4 rounded-full pl-12 pr-5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-3 transition-all shadow-sm text-brand-1 placeholder-brand-2"
+            className="flex-1 bg-transparent pl-12 pr-2 py-3 text-sm font-medium focus:outline-none text-brand-1 placeholder-brand-2"
           />
+          {searchQuery && (
+            <button onClick={clearSearch} className="mr-5 p-1 text-brand-2 hover:text-brand-1 transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-4">
           {!selectedSidebarTag && (
