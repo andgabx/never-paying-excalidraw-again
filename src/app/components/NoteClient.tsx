@@ -20,11 +20,27 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
   const extractTextFromShapes = (shapes: any[]): string | null => {
     const textParts: string[] = [];
     for (const shape of shapes) {
-      if (shape.props && typeof shape.props.text === 'string' && shape.props.text.trim().length > 0) {
-        textParts.push(shape.props.text.trim());
+      if (shape.props) {
+        let text = '';
+        if (typeof shape.props.text === 'string') {
+          text = shape.props.text;
+        } else if (shape.props.richText && Array.isArray(shape.props.richText.content)) {
+          // Parse richText structure (tldraw v2/3 format)
+          for (const block of shape.props.richText.content) {
+            if (Array.isArray(block.content)) {
+              for (const inline of block.content) {
+                if (inline.text) text += inline.text;
+              }
+            }
+            text += ' '; // Add space between paragraphs
+          }
+        }
+        if (text.trim().length > 0) {
+          textParts.push(text.trim());
+        }
       }
     }
-    return textParts.length > 0 ? textParts.join('\n') : null;
+    return textParts.length > 0 ? textParts.join('\\n') : null;
   };
 
   const generateThumbnail = async (editor: Editor): Promise<string | null> => {
