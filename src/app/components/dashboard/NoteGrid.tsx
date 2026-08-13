@@ -44,8 +44,12 @@ export function NoteGrid({
                 key={note.id} draggable onDragStart={(e) => onDragStart(e, note.id, 'note')} onClick={() => { if (editingId !== note.id) router.push(`/notes/${note.id}`); }}
                 className="group bg-brand-4 rounded-[32px] overflow-hidden border border-brand-3/20 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col h-[220px] transform hover:-translate-y-1.5"
               >
-                <div className={`h-28 bg-gradient-to-br ${GRADIENTS[gIdx]} relative p-4`}>
-                  <div className="absolute inset-0 bg-brand-5/10 mix-blend-overlay"></div>
+                <div className={`h-28 ${note.thumbnail ? 'bg-brand-3/20' : `bg-gradient-to-br ${GRADIENTS[gIdx]}`} relative p-4 overflow-hidden`}>
+                  {note.thumbnail ? (
+                    <img src={note.thumbnail} alt={note.name} className="absolute inset-0 object-cover w-full h-full" />
+                  ) : (
+                    <div className="absolute inset-0 bg-brand-5/10 mix-blend-overlay"></div>
+                  )}
                   <button onClick={(e) => { e.stopPropagation(); onSetMenuOpenId(menuOpenId === note.id ? null : note.id); }} className="absolute top-4 right-4 bg-brand-5/40 hover:bg-brand-5/60 backdrop-blur-md text-brand-1 p-2 rounded-full transition-colors z-10">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                   </button>

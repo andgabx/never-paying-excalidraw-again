@@ -17,11 +17,34 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
   const [editor, setEditor] = useState<Editor | null>(null);
 
 
+  const generateThumbnail = async (editor: Editor): Promise<string | null> => {
+    try {
+      const shapes = editor.getCurrentPageShapes();
+      if (shapes.length === 0) return null;
+
+      const { blob } = await editor.toImage(shapes, { format: 'png', background: true });
+      if (!blob) return null;
+
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.error("Failed to generate thumbnail", e);
+      return null;
+    }
+  };
+
   const handleSave = async (editor: Editor) => {
     setSaving(true);
     const snapshot = editor.store.getStoreSnapshot();
+    const thumbnail = await generateThumbnail(editor);
+
     try {
-      await axios.put(`/api/notes/${note.id}`, { data: snapshot });
+      await axios.put(`/api/notes/${note.id}`, { data: snapshot, thumbnail });
       setLastSaved(new Date());
     } catch (error) { console.error(error); }
     setSaving(false);
@@ -124,7 +147,9 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
             let timeoutId: NodeJS.Timeout;
             ed.store.listen(() => {
               clearTimeout(timeoutId);
-              timeoutId = setTimeout(() => handleSave(ed), 2000);
+              timeoutId = setTimeout(() => {
+                handleSave(ed);
+              }, 2000);
             });
           }}
         />

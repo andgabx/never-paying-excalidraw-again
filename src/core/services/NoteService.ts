@@ -18,7 +18,7 @@ export class NoteService {
     }
   }
 
-  async updateNote(id: string, data: { name?: string; data?: unknown; folderId?: string | null; workspaceId?: string }) {
+  async updateNote(id: string, data: { name?: string; data?: unknown; folderId?: string | null; workspaceId?: string; thumbnail?: string | null }) {
     await this.noteRepo.updateNote(id, data);
   }
 

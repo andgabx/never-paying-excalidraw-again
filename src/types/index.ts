@@ -11,4 +11,5 @@ export type Note = {
   updatedAt: string | Date; 
   tags: NoteTag[];
   data?: any;
+  thumbnail?: string | null;
 };

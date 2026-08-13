@@ -20,6 +20,7 @@ export const notes = pgTable('notes', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   data: jsonb('data').notNull(),
+  thumbnail: text('thumbnail'),
   workspaceId: text('workspace_id').references(() => workspaces.id),
   folderId: text('folder_id').references(() => folders.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),

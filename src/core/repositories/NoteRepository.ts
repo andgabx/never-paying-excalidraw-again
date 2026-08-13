@@ -6,7 +6,15 @@ import { Note } from '@/types';
 
 export class NoteRepository implements INoteRepository {
   async findNotesByWorkspace(workspaceId: string, folderId: string | null): Promise<Note[]> {
-    let query: any = db.select({ id: notes.id, name: notes.name, createdAt: notes.createdAt, updatedAt: notes.updatedAt, folderId: notes.folderId, workspaceId: notes.workspaceId })
+    let query: any = db.select({ 
+      id: notes.id, 
+      name: notes.name, 
+      createdAt: notes.createdAt, 
+      updatedAt: notes.updatedAt, 
+      folderId: notes.folderId, 
+      workspaceId: notes.workspaceId,
+      thumbnail: notes.thumbnail
+    })
       .from(notes);
       
     if (folderId) {
@@ -16,7 +24,7 @@ export class NoteRepository implements INoteRepository {
     }
     
     query = query.orderBy(desc(notes.updatedAt));
-    const allNotes = await query as unknown as { id: string; name: string; createdAt: Date; updatedAt: Date; folderId: string | null; workspaceId: string }[];
+    const allNotes = await query as unknown as { id: string; name: string; createdAt: Date; updatedAt: Date; folderId: string | null; workspaceId: string; thumbnail?: string | null }[];
     
     const noteIds = allNotes.map(n => n.id);
     let noteTagsMap: Record<string, any[]> = {};
@@ -41,7 +49,7 @@ export class NoteRepository implements INoteRepository {
     await db.insert(notes).values(data);
   }
 
-  async updateNote(id: string, data: { name?: string; data?: unknown; folderId?: string | null; workspaceId?: string }): Promise<void> {
+  async updateNote(id: string, data: { name?: string; data?: unknown; folderId?: string | null; workspaceId?: string; thumbnail?: string | null }): Promise<void> {
     await db.update(notes).set({ ...data, updatedAt: new Date() }).where(eq(notes.id, id));
   }
 
