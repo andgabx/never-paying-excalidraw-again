@@ -21,6 +21,7 @@ export const notes = pgTable('notes', {
   name: text('name').notNull(),
   data: jsonb('data').notNull(),
   thumbnail: text('thumbnail'),
+  extractedText: text('extracted_text'),
   workspaceId: text('workspace_id').references(() => workspaces.id),
   folderId: text('folder_id').references(() => folders.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),

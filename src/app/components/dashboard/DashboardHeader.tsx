@@ -5,6 +5,7 @@ import { COLOR_MAP } from '@/constants/theme';
 interface DashboardHeaderProps {
   searchQuery: string;
   setSearchQuery: (val: string) => void;
+  onCommitSearch: () => void;
   selectedSidebarTag: Tag | null;
   selectedFolder: Folder | null;
   onOpenFolderModal: () => void;
@@ -14,7 +15,7 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({
-  searchQuery, setSearchQuery, selectedSidebarTag, selectedFolder,
+  searchQuery, setSearchQuery, onCommitSearch, selectedSidebarTag, selectedFolder,
   onOpenFolderModal, onOpenNoteModal, onNavigateUp, onDropToParent
 }: DashboardHeaderProps) {
   return (
@@ -23,8 +24,13 @@ export function DashboardHeader({
         <div className="flex-1 max-w-lg relative">
           <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input 
-            type="text" placeholder="Pesquisar..." 
+            type="text" placeholder="Pesquisar por título ou conteúdo das anotações..." 
             value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                onCommitSearch();
+              }
+            }}
             className="w-full bg-brand-4/50 border border-brand-4 rounded-full pl-12 pr-5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-3 transition-all shadow-sm text-brand-1 placeholder-brand-2"
           />
         </div>

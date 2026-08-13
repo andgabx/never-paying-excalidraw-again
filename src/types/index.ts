@@ -12,4 +12,5 @@ export type Note = {
   tags: NoteTag[];
   data?: any;
   thumbnail?: string | null;
+  extractedText?: string | null;
 };

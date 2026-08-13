@@ -26,6 +26,7 @@ import {
 
 export default function DashboardClient({ initialWorkspaces }: { initialWorkspaces: Workspace[] }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [committedSearchQuery, setCommittedSearchQuery] = useState('');
   
   // Custom Hooks for State
   const { workspaces, selectedWorkspace, setSelectedWorkspace, createWorkspace, renameWorkspace } = useWorkspaces(initialWorkspaces);
@@ -146,8 +147,12 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
   let displayedNotes = selectedSidebarTag 
     ? notes.filter(n => n.tags?.some(t => t.id === selectedSidebarTag.id))
     : notes;
-  if (searchQuery.trim()) {
-    displayedNotes = displayedNotes.filter(n => n.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  if (committedSearchQuery.trim()) {
+    const term = committedSearchQuery.toLowerCase();
+    displayedNotes = displayedNotes.filter(n => 
+      n.name.toLowerCase().includes(term) || 
+      (n.extractedText && n.extractedText.toLowerCase().includes(term))
+    );
   }
 
   return (
@@ -180,7 +185,7 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
         ) : (
           <div className="max-w-6xl w-full mx-auto relative z-10">
             <DashboardHeader 
-              searchQuery={searchQuery} setSearchQuery={setSearchQuery} selectedSidebarTag={selectedSidebarTag} selectedFolder={selectedFolder}
+              searchQuery={searchQuery} setSearchQuery={setSearchQuery} onCommitSearch={() => setCommittedSearchQuery(searchQuery)} selectedSidebarTag={selectedSidebarTag} selectedFolder={selectedFolder}
               onOpenFolderModal={openFolderModal} onOpenNoteModal={openNoteModal} onNavigateUp={() => navigateUp(() => loadNotes(selectedWorkspace.id), (fid) => loadNotes(selectedWorkspace.id, fid))}
               onDropToParent={async (e) => {
                 const { id, type } = JSON.parse(e.dataTransfer.getData('text/plain'));
@@ -228,7 +233,7 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
               </div>
             ) : (
               <>
-                {!selectedSidebarTag && folders.length > 0 && !searchQuery && (
+                {!selectedSidebarTag && folders.length > 0 && !committedSearchQuery && (
                   <FolderGrid 
                     folders={folders} editingId={editingId} editName={editName}
                     onNavigateToFolder={(f) => navigateToFolder(f, (fid) => loadNotes(selectedWorkspace.id, fid))} onSetEditingId={setEditingId} onSetEditName={setEditName} onRenameFolder={renameFolder}

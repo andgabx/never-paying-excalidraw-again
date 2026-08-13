@@ -17,6 +17,16 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
   const [editor, setEditor] = useState<Editor | null>(null);
 
 
+  const extractTextFromShapes = (shapes: any[]): string | null => {
+    const textParts: string[] = [];
+    for (const shape of shapes) {
+      if (shape.props && typeof shape.props.text === 'string' && shape.props.text.trim().length > 0) {
+        textParts.push(shape.props.text.trim());
+      }
+    }
+    return textParts.length > 0 ? textParts.join('\n') : null;
+  };
+
   const generateThumbnail = async (editor: Editor): Promise<string | null> => {
     try {
       const shapes = editor.getCurrentPageShapes();
@@ -42,9 +52,10 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
     setSaving(true);
     const snapshot = editor.store.getStoreSnapshot();
     const thumbnail = await generateThumbnail(editor);
+    const extractedText = extractTextFromShapes(editor.getCurrentPageShapes()); // Add this
 
     try {
-      await axios.put(`/api/notes/${note.id}`, { data: snapshot, thumbnail });
+      await axios.put(`/api/notes/${note.id}`, { data: snapshot, thumbnail, extractedText }); // Include it here
       setLastSaved(new Date());
     } catch (error) { console.error(error); }
     setSaving(false);
