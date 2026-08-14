@@ -8,15 +8,18 @@ import { useRouter } from 'next/navigation';
 export function useNotes(tags: Tag[]) {
   const router = useRouter();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadNotes = async (workspaceId: string, folderId?: string | null) => {
     try {
+      setIsLoading(true);
       const url = folderId 
         ? `/api/notes?workspaceId=${workspaceId}&folderId=${folderId}`
         : `/api/notes?workspaceId=${workspaceId}`;
       const res = await axios.get(url);
       setNotes(res.data);
     } catch (error) { console.error(error); }
+    finally { setIsLoading(false); }
   };
 
   const createNote = async (name: string, targetWorkspaceId: string, folderId: string | null, tagIds: string[]) => {
@@ -81,14 +84,37 @@ export function useNotes(tags: Tag[]) {
 
   const searchNotesAPI = async (query: string, scope: 'global' | 'workspace' | 'folder', workspaceId: string, folderId: string | null) => {
     try {
+      setIsLoading(true);
       let url = `/api/notes?search=${encodeURIComponent(query)}&scope=${scope}&workspaceId=${workspaceId}`;
       if (folderId) url += `&folderId=${folderId}`;
       const res = await axios.get(url);
       setNotes(res.data);
     } catch (error) {
       toast.error('Erro ao pesquisar notas');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return { notes, loadNotes, createNote, renameNote, deleteNote, moveNote, updateNoteTags, searchNotesAPI };
+  const bulkDeleteNotes = async (ids: string[]) => {
+    try {
+      setNotes(prev => prev.filter(n => !ids.includes(n.id)));
+      await Promise.all(ids.map(id => axios.delete(`/api/notes/${id}`)));
+      toast.success(`${ids.length} notas excluídas!`);
+    } catch { toast.error('Erro ao excluir notas'); }
+  };
+
+  const bulkMoveNotes = async (ids: string[], targetFolderId: string | null, targetWorkspaceId?: string, destinationName?: string) => {
+    try {
+      setNotes(prev => prev.filter(n => !ids.includes(n.id)));
+      const payload = targetWorkspaceId 
+        ? { folderId: targetFolderId, workspaceId: targetWorkspaceId } 
+        : { folderId: targetFolderId };
+      await Promise.all(ids.map(id => axios.put(`/api/notes/${id}`, payload)));
+      const label = destinationName ? ` para ${destinationName}` : '';
+      toast.success(`${ids.length} notas movidas${label}!`);
+    } catch { toast.error('Erro ao mover notas'); }
+  };
+
+  return { notes, isLoading, loadNotes, createNote, renameNote, deleteNote, moveNote, bulkDeleteNotes, bulkMoveNotes, updateNoteTags, searchNotesAPI };
 }

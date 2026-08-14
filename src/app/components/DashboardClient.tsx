@@ -32,7 +32,7 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
   const { workspaces, selectedWorkspace, setSelectedWorkspace, createWorkspace, renameWorkspace } = useWorkspaces(initialWorkspaces);
   const { allFolders, folders, selectedFolder, loadFolders, navigateToFolder, navigateUp, createFolder, renameFolder, moveFolder } = useFolders(selectedWorkspace?.id);
   const { tags, selectedSidebarTag, setSelectedSidebarTag, loadTags, createTag, updateTag, deleteTag } = useTags(selectedWorkspace?.id);
-  const { notes, loadNotes, createNote, renameNote, deleteNote, moveNote, updateNoteTags, searchNotesAPI } = useNotes(tags);
+  const { notes, isLoading, loadNotes, createNote, renameNote, deleteNote, moveNote, bulkDeleteNotes, bulkMoveNotes, updateNoteTags, searchNotesAPI } = useNotes(tags);
 
   // Modals & UI State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -49,6 +49,9 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
   const [isUpdateTagModalOpen, setIsUpdateTagModalOpen] = useState(false);
   const [isDeleteNoteModalOpen, setIsDeleteNoteModalOpen] = useState(false);
   const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isBulkMoveModalOpen, setIsBulkMoveModalOpen] = useState(false);
+  const [bulkActionIds, setBulkActionIds] = useState<string[]>([]);
   const [tagToUpdate, setTagToUpdate] = useState<Tag | null>(null);
   
   // Modal forms state
@@ -270,10 +273,21 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
                 )}
                 
                 <NoteGrid 
-                  notes={displayedNotes} editingId={editingId} editName={editName} menuOpenId={menuOpenId}
+                  notes={displayedNotes} isLoading={isLoading} editingId={editingId} editName={editName} menuOpenId={menuOpenId}
                   onSetEditingId={setEditingId} onSetEditName={setEditName} onSetMenuOpenId={setMenuOpenId} onRenameNote={renameNote} onDeleteNote={(e, id) => { e.stopPropagation(); setDeleteNoteId(id); setIsDeleteNoteModalOpen(true); }}
                   onOpenEditTagsModal={(note) => { setEditingNoteForTags(note); setSelectedTagsForNewNote(note.tags?.map(t => t.id) || []); setIsEditTagsModalOpen(true); }}
                   onDragStart={(e, id, type) => { e.dataTransfer.setData('text/plain', JSON.stringify({ id, type })); e.dataTransfer.effectAllowed = 'move'; }}
+                  onBulkDelete={(ids) => {
+                    setBulkActionIds(ids);
+                    setIsBulkDeleteModalOpen(true);
+                  }}
+                  onBulkMove={(ids) => {
+                    setBulkActionIds(ids);
+                    setModalWorkspaceId(selectedWorkspace?.id || workspaces[0]?.id || '');
+                    setModalFolders(allFolders);
+                    setSelectedFolderForNewNote(null);
+                    setIsBulkMoveModalOpen(true);
+                  }}
                 />
               </>
             )}
@@ -300,12 +314,58 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
         onDelete={handleDeleteTag}
       />
       
+      {isBulkMoveModalOpen && (
+        <div className="fixed inset-0 bg-brand-5/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-brand-5 border border-brand-4 rounded-3xl shadow-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-brand-1 mb-6">Mover {bulkActionIds.length} Notas</h2>
+            
+            {workspaces.length > 0 && (
+              <div className="mb-6">
+                <label className="text-[11px] font-black text-brand-2 uppercase tracking-wider mb-2 block">Workspace de Destino</label>
+                <select value={modalWorkspaceId} onChange={e => handleModalWorkspaceChange(e.target.value)} className="w-full bg-brand-5/60 border-2 border-brand-3/30 rounded-xl px-4 py-3 text-brand-1 outline-none focus:border-brand-2 transition-all font-bold text-sm appearance-none">
+                  {workspaces.map((ws) => <option key={ws.id} value={ws.id}>{ws.name}</option>)}
+                </select>
+              </div>
+            )}
+      
+            <div className="mb-8">
+              <label className="text-[11px] font-black text-brand-2 uppercase tracking-wider mb-2 block">Pasta de Destino</label>
+              <select value={selectedFolderForNewNote || ''} onChange={e => setSelectedFolderForNewNote(e.target.value || null)} className="w-full bg-brand-5/60 border-2 border-brand-3/30 rounded-xl px-4 py-3 text-brand-1 outline-none focus:border-brand-2 transition-all font-bold text-sm appearance-none">
+                <option value="">Raiz do Workspace (Overview)</option>
+                {modalFolders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setIsBulkMoveModalOpen(false)} className="flex-1 px-4 py-3 rounded-2xl font-bold text-sm bg-brand-4/50 text-brand-2 hover:bg-brand-4 hover:text-brand-1 transition-all">Cancelar</button>
+              <button onClick={async () => {
+                await bulkMoveNotes(bulkActionIds, selectedFolderForNewNote, modalWorkspaceId, undefined);
+                setIsBulkMoveModalOpen(false);
+              }} className="flex-1 px-4 py-3 rounded-2xl font-bold text-sm bg-brand-2 text-brand-5 hover:bg-brand-1 transition-all">Mover</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfirmModal
         isOpen={isDeleteNoteModalOpen}
         onClose={() => { setIsDeleteNoteModalOpen(false); setDeleteNoteId(null); }}
         onConfirm={() => { if (deleteNoteId) deleteNote(deleteNoteId); }}
-        title="Excluir Anotação"
-        message="Tem certeza que deseja excluir esta anotação? Esta ação não pode ser desfeita."
+        title="Excluir Nota"
+        message="Tem certeza que deseja excluir esta nota?"
+        confirmText="Excluir"
+        isDestructive={true}
+      />
+
+      <ConfirmModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => setIsBulkDeleteModalOpen(false)}
+        onConfirm={async () => {
+          await bulkDeleteNotes(bulkActionIds);
+          setIsBulkDeleteModalOpen(false);
+        }}
+        title="Excluir Notas em Massa"
+        message={`Tem certeza que deseja excluir as ${bulkActionIds.length} notas selecionadas?`}
         confirmText="Excluir"
         isDestructive={true}
       />
