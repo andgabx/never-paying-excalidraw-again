@@ -17,10 +17,14 @@ export class NoteRepository implements INoteRepository {
     })
       .from(notes);
       
+    const isWorkspaceMatch = eq(notes.workspaceId, workspaceId);
+      
     if (folderId) {
-      query = query.where(and(eq(notes.workspaceId, workspaceId), eq(notes.folderId, folderId)));
+      const isFolderMatch = eq(notes.folderId, folderId);
+      query = query.where(and(isWorkspaceMatch, isFolderMatch));
     } else {
-      query = query.where(and(eq(notes.workspaceId, workspaceId), isNull(notes.folderId)));
+      const isRootFolder = isNull(notes.folderId);
+      query = query.where(and(isWorkspaceMatch, isRootFolder));
     }
     
     query = query.orderBy(desc(notes.updatedAt));
