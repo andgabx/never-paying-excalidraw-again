@@ -5,6 +5,7 @@ import { Tldraw, Editor, loadSnapshot, DefaultFontStyle } from 'tldraw';
 import 'tldraw/tldraw.css';
 import Link from 'next/link';
 import axios from 'axios';
+import localforage from 'localforage';
 
 import { Note } from '@/types';
 
@@ -157,29 +158,54 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
             }, 50);
             setEditor(ed);
 
-            
-            if (note.data && Object.keys(note.data).length > 0) {
+            const CACHE_KEY = `note-cache-${note.id}`;
+
+            const loadData = async () => {
               try {
-                if (note.data.document) {
-                  // Old format (TLEditorSnapshot)
-                  loadSnapshot(ed.store, note.data);
-                } else {
-                  // New format (TLStoreSnapshot)
-                  ed.store.loadStoreSnapshot(note.data);
+                const cachedData = await localforage.getItem<{snapshot: any, localUpdatedAt: number}>(CACHE_KEY);
+                let dataToLoad = note.data;
+                
+                if (cachedData && cachedData.localUpdatedAt && cachedData.snapshot) {
+                  const remoteDate = new Date(note.updatedAt || 0).getTime();
+                  if (cachedData.localUpdatedAt > remoteDate) {
+                    console.log('Loading newer snapshot from local cache');
+                    dataToLoad = cachedData.snapshot;
+                    // Trigger remote sync to reconcile
+                    setTimeout(() => handleSave(ed), 1500);
+                  }
+                }
+                
+                if (dataToLoad && Object.keys(dataToLoad).length > 0) {
+                  if ((dataToLoad as any).document) {
+                    // Old format (TLEditorSnapshot)
+                    loadSnapshot(ed.store, dataToLoad as any);
+                  } else {
+                    // New format (TLStoreSnapshot)
+                    ed.store.loadStoreSnapshot(dataToLoad as any);
+                  }
                 }
               } catch (e) {
                 console.error("Failed to load snapshot", e);
+              } finally {
+                // Auto-save when the user stops interacting
+                let timeoutId: NodeJS.Timeout;
+                ed.store.listen(() => {
+                  // 1. Save to local cache immediately
+                  localforage.setItem(CACHE_KEY, {
+                    snapshot: ed.store.getStoreSnapshot(),
+                    localUpdatedAt: Date.now()
+                  }).catch(err => console.error('Cache save failed', err));
+
+                  // 2. Debounce for remote save
+                  clearTimeout(timeoutId);
+                  timeoutId = setTimeout(() => {
+                    handleSave(ed);
+                  }, 2000);
+                });
               }
-            }
+            };
             
-            // Auto-save when the user stops interacting
-            let timeoutId: NodeJS.Timeout;
-            ed.store.listen(() => {
-              clearTimeout(timeoutId);
-              timeoutId = setTimeout(() => {
-                handleSave(ed);
-              }, 2000);
-            });
+            loadData();
           }}
         />
       </div>
