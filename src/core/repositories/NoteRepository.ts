@@ -13,8 +13,7 @@ export class NoteRepository implements INoteRepository {
       updatedAt: notes.updatedAt, 
       folderId: notes.folderId, 
       workspaceId: notes.workspaceId,
-      thumbnail: notes.thumbnail,
-      extractedText: notes.extractedText
+      thumbnail: notes.thumbnail
     })
       .from(notes);
       
@@ -25,7 +24,7 @@ export class NoteRepository implements INoteRepository {
     }
     
     query = query.orderBy(desc(notes.updatedAt));
-    const allNotes = await query as unknown as { id: string; name: string; createdAt: Date; updatedAt: Date; folderId: string | null; workspaceId: string; thumbnail?: string | null; extractedText?: string | null }[];
+    const allNotes = await query as unknown as { id: string; name: string; createdAt: Date; updatedAt: Date; folderId: string | null; workspaceId: string; thumbnail?: string | null }[];
     
     const noteIds = allNotes.map(n => n.id);
     let noteTagsMap: Record<string, any[]> = {};
@@ -77,8 +76,7 @@ export class NoteRepository implements INoteRepository {
       updatedAt: notes.updatedAt, 
       folderId: notes.folderId, 
       workspaceId: notes.workspaceId,
-      thumbnail: notes.thumbnail,
-      extractedText: notes.extractedText
+      thumbnail: notes.thumbnail
     })
     .from(notes);
       
@@ -103,7 +101,7 @@ export class NoteRepository implements INoteRepository {
     query = query.where(and(...conditions));
     query = query.orderBy(desc(notes.updatedAt));
     
-    const allNotes = await query as unknown as { id: string; name: string; createdAt: Date; updatedAt: Date; folderId: string | null; workspaceId: string; thumbnail?: string | null; extractedText?: string | null }[];
+    const allNotes = await query as unknown as { id: string; name: string; createdAt: Date; updatedAt: Date; folderId: string | null; workspaceId: string; thumbnail?: string | null }[];
     
     const noteIds = allNotes.map(n => n.id);
     let noteTagsMap: Record<string, any[]> = {};
