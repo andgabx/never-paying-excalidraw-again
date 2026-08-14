@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Tldraw, Editor, loadSnapshot } from 'tldraw';
+import { Tldraw, Editor, loadSnapshot, DefaultFontStyle } from 'tldraw';
 import 'tldraw/tldraw.css';
 import Link from 'next/link';
 import axios from 'axios';
@@ -152,6 +152,8 @@ export default function NoteClient({ initialNote }: { initialNote: Note }) {
               if (!ed.user.getAreKeyboardShortcutsEnabled()) {
                 ed.user.updateUserPreferences({ areKeyboardShortcutsEnabled: true });
               }
+              // Force default font to be hand-drawn
+              ed.setStyleForNextShapes(DefaultFontStyle, 'draw');
             }, 50);
             setEditor(ed);
 
