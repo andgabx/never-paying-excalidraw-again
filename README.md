@@ -17,4 +17,19 @@ DATABASE_URL="postgresql://neondb_owner:blabla@ep-blabla.neon.tech/neondb"
 ```
 
 **4. Sobe as tabelas e roda**
-Roda `npx drizzle-kit push` pra criar a tabela lá no Neon. Depois é só dar `npm run dev`, abrir o `localhost:3000` e ser feliz desenhando sem pagar nada pra ninguém
+Roda o comando abaixo para criar as tabelas lá no Neon:
+```bash
+npx drizzle-kit push
+```
+
+Depois, como esse app agora é um **PWA Offline-First** (ou seja, você consegue usar mesmo sem internet!), você precisa fazer a build de produção e rodar o servidor oficial. Rode:
+```bash
+npm run build
+```
+
+E em seguida:
+```bash
+npm run start
+```
+
+Pronto! É só abrir o `localhost:3000` e ser feliz desenhando sem pagar nada pra ninguém (e agora sem precisar de Wi-Fi também).

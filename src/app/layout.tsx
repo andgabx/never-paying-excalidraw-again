@@ -9,6 +9,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "CloudCanvas",
   description: "Endless whiteboard and visual notes",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "CloudCanvas",
+  },
 };
 
 export const viewport = {
@@ -16,7 +22,10 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#0D0D0D",
 };
+
+import { RegisterServiceWorker } from "./components/RegisterServiceWorker";
 
 export default function RootLayout({
   children,
@@ -25,7 +34,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <RegisterServiceWorker />
+        {children}
+      </body>
     </html>
   );
 }

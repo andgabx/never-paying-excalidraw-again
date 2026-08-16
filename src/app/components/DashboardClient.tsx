@@ -24,13 +24,13 @@ import {
   ConfirmModal
 } from './modals';
 
-export default function DashboardClient({ initialWorkspaces }: { initialWorkspaces: Workspace[] }) {
+export default function DashboardClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [committedSearchQuery, setCommittedSearchQuery] = useState('');
   
   // Custom Hooks for State
-  const { workspaces, selectedWorkspace, setSelectedWorkspace, createWorkspace, renameWorkspace } = useWorkspaces(initialWorkspaces);
-  const { allFolders, folders, selectedFolder, loadFolders, navigateToFolder, navigateUp, createFolder, renameFolder, moveFolder } = useFolders(selectedWorkspace?.id);
+  const { workspaces, selectedWorkspace, setSelectedWorkspace, createWorkspace, renameWorkspace } = useWorkspaces();
+  const { allFolders, folders, selectedFolder, setFolderPath, loadFolders, navigateToFolder, navigateUp, createFolder, renameFolder, moveFolder } = useFolders(selectedWorkspace?.id);
   const { tags, selectedSidebarTag, setSelectedSidebarTag, loadTags, createTag, updateTag, deleteTag } = useTags(selectedWorkspace?.id);
   const { notes, isLoading, loadNotes, createNote, renameNote, deleteNote, moveNote, bulkDeleteNotes, bulkMoveNotes, updateNoteTags, searchNotesAPI } = useNotes(tags);
 
@@ -77,7 +77,7 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
       Promise.all([
         loadFolders(selectedWorkspace.id),
         loadTags(selectedWorkspace.id),
-        loadNotes(selectedWorkspace.id)
+        loadNotes(selectedWorkspace.id, selectedFolder?.id || null)
       ]).finally(() => {
         setIsLoadingContent(false);
       });
@@ -156,7 +156,12 @@ export default function DashboardClient({ initialWorkspaces }: { initialWorkspac
       <Sidebar 
         workspaces={workspaces} selectedWorkspace={selectedWorkspace} tags={tags} selectedSidebarTag={selectedSidebarTag}
         editingId={editingId} editName={editName}
-        onSelectWorkspace={(ws) => { setEditingId(null); setSelectedWorkspace(ws); }}
+        onSelectWorkspace={(ws) => { 
+          setEditingId(null); 
+          setSelectedWorkspace(ws); 
+          setFolderPath([]);
+          localStorage.removeItem('last_folder_path');
+        }}
         onSetEditingId={setEditingId} onSetEditName={setEditName} onRenameWorkspace={renameWorkspace}
         onSelectTag={setSelectedSidebarTag} onOpenWorkspaceModal={() => { setIsWorkspaceModalOpen(true); setNewName(''); }} onOpenTagModal={openTagModal}
         onEditTag={(tag) => {

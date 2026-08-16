@@ -7,7 +7,15 @@ import { Folder } from '@/types';
 export function useFolders(selectedWorkspaceId: string | undefined) {
   const [allFolders, setAllFolders] = useState<Folder[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [folderPath, setFolderPath] = useState<Folder[]>([]);
+  const [folderPath, setFolderPath] = useState<Folder[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('last_folder_path');
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return [];
+  });
   
   const selectedFolder = folderPath[folderPath.length - 1] || null;
 
@@ -15,13 +23,20 @@ export function useFolders(selectedWorkspaceId: string | undefined) {
     try {
       const res = await axios.get(`/api/folders?workspaceId=${workspaceId}`);
       setAllFolders(res.data);
-      setFolders(res.data.filter((f: Folder) => !f.parentId));
-      setFolderPath([]);
+      
+      if (folderPath.length > 0) {
+        const currentFolderId = folderPath[folderPath.length - 1].id;
+        setFolders(res.data.filter((f: Folder) => f.parentId === currentFolderId));
+      } else {
+        setFolders(res.data.filter((f: Folder) => !f.parentId));
+      }
     } catch (error) { console.error(error); }
   };
 
   const navigateToFolder = async (folder: Folder, loadNotes: (folderId: string) => void) => {
-    setFolderPath(prev => [...prev, folder]);
+    const newPath = [...folderPath, folder];
+    setFolderPath(newPath);
+    localStorage.setItem('last_folder_path', JSON.stringify(newPath));
     setFolders(allFolders.filter(f => f.parentId === folder.id));
     loadNotes(folder.id);
   };
@@ -30,6 +45,7 @@ export function useFolders(selectedWorkspaceId: string | undefined) {
     const newPath = [...folderPath];
     newPath.pop();
     setFolderPath(newPath);
+    localStorage.setItem('last_folder_path', JSON.stringify(newPath));
     const parentFolder = newPath[newPath.length - 1];
     if (parentFolder) {
       setFolders(allFolders.filter(f => f.parentId === parentFolder.id));
@@ -84,7 +100,7 @@ export function useFolders(selectedWorkspaceId: string | undefined) {
   };
 
   return { 
-    allFolders, folders, folderPath, selectedFolder, 
+    allFolders, folders, folderPath, selectedFolder, setFolderPath,
     loadFolders, navigateToFolder, navigateUp, 
     createFolder, renameFolder, moveFolder 
   };
